@@ -1,6 +1,7 @@
 import builtins
 import torch
 from transformers.utils import logging
+from transformers.modeling_outputs import BaseModelOutputWithPast
 from typing import Dict, Union, List, Optional
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, DynamicCache
 from transformers.tokenization_utils_base import BatchEncoding
@@ -14,7 +15,7 @@ import json
 import tiktoken
 import copy
 
-# Work around minference 0.1.5 missing typing imports for `Union`/`Tuple`/`List`
+# Work around minference 0.1.5 missing typing imports for `Union`/`Tuple`/`List`/`BaseModelOutputWithPast`
 # by pre-populating them on builtins before importing the library.
 from typing import List as _TypingList, Tuple as _TypingTuple, Union as _TypingUnion
 if not hasattr(builtins, "Union"):
@@ -23,6 +24,8 @@ if not hasattr(builtins, "Tuple"):
     builtins.Tuple = _TypingTuple
 if not hasattr(builtins, "List"):
     builtins.List = _TypingList
+if not hasattr(builtins, "BaseModelOutputWithPast"):
+    builtins.BaseModelOutputWithPast = BaseModelOutputWithPast
 
 from minference import MInference
 
