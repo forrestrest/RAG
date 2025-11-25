@@ -78,11 +78,48 @@ In this notebook, we run the complete MemoRAG pipeline (Memory Model + Retriever
 
 To use Memorizer and MemoRAG, you need to have Python installed along with the required libraries. You can install the necessary dependencies using the following command:
 
+#### 中文环境配置快速指引
+
+1. **准备 Python 环境**：推荐 Python 3.10/3.11（方便安装 `torch==2.3.1`）。如果当前是 3.12+，可用 Conda 新建环境：
+   ```bash
+   conda create -n memorag python=3.10 -y
+   conda activate memorag
+   ```
+2. **先装 PyTorch**（minference 构建会导入 torch，需提前安装；根据本机 CUDA 版本选择 `cu117/cu118/cu121`，CPU 环境用 `cpu`）：
+   ```bash
+   pip install torch==2.3.1 --index-url https://download.pytorch.org/whl/cu121
+   # CPU 仅：pip install torch==2.3.1 --index-url https://download.pytorch.org/whl/cpu
+   ```
+3. **可选：安装 GPU 版 Faiss**（有 Conda 时）：
+   ```bash
+   conda install -c pytorch -c nvidia faiss-gpu=1.8.0
+   ```
+4. **安装 MemoRAG**：
+   - 从源码（便于调试）：
+     ```bash
+     git clone <仓库地址>
+     cd MemoRAG
+     pip install -e .
+     ```
+   - 或直接 PyPI：
+     ```bash
+     pip install memorag
+     ```
+
+> 顺序要点：务必先安装 PyTorch，再执行 `pip install -e .`，否则 `minference` 在构建时会因缺少 torch 报错。
+
 **Install Dependencies**
 ```bash
-pip install torch==2.3.1
+# Install PyTorch first (minference's setup.py imports torch during build)
+# torch==2.3.1 officially supports Python 3.10/3.11; choose the matching wheel for your CUDA/CPU setup
+pip install torch==2.3.1 --index-url https://download.pytorch.org/whl/cu121  # or cu118/cu117/cpu
+
+# (Optional) GPU Faiss
 conda install -c pytorch -c nvidia faiss-gpu=1.8.0
 ```
+
+> If you are on Python 3.12+ (or the wheel above is unavailable), create a Python 3.10/3.11 environment first (e.g., via Conda
+> `conda create -n torch231 python=3.10 -y && conda activate torch231`) and then run the commands above.
 
 **Install from source**
 
@@ -96,6 +133,98 @@ pip install -e .
 ```
 pip install memorag
 ```
+
+**下载推荐模型到本地（可选，使用 Hugging Face CLI）**
+```bash
+# 安装 CLI 并登录（如需私有模型 Token）
+pip install "huggingface_hub>=0.23"
+huggingface-cli login --token <HF_TOKEN>   # 如果模型公开且你已可访问，可跳过
+
+# 记忆模型（二选一）
+huggingface-cli download TommyChien/memorag-qwen2-7b-inst --local-dir models/memorag-qwen2-7b-inst --local-dir-use-symlinks False
+# 或：huggingface-cli download TommyChien/memorag-mistral-7b-inst --local-dir models/memorag-mistral-7b-inst --local-dir-use-symlinks False
+
+# 检索模型
+huggingface-cli download BAAI/bge-m3 --local-dir models/bge-m3 --local-dir-use-symlinks False
+
+# （可选）生成模型：如果不复用记忆模型，则单独下载
+huggingface-cli download mistralai/Mistral-7B-Instruct-v0.2 --local-dir models/mistral-7b --local-dir-use-symlinks False
+
+# 使用时把模型路径指向本地目录，如 mem_model_name_or_path="models/memorag-qwen2-7b-inst"
+```
+
+**模型下载后如何复现（中文简版）**
+
+1. **激活环境并确认模型路径**（假设都下到 `models/`）：
+   ```bash
+   conda activate memorag  # 或你的虚拟环境名
+   ls models  # 确认 memorag-qwen2-7b-inst / bge-m3 等目录存在
+   ```
+2. **直接运行官方示例代码**：无需额外脚本，命令行即可启动。
+   ```bash
+   # 方式 A：命令行直接运行（推荐先下载模型到 models/）
+   python - <<'PY'
+   from memorag import MemoRAGLite
+
+   pipe = MemoRAGLite(
+       mem_model_name_or_path="models/memorag-qwen2-7b-inst",
+       ret_model_name_or_path="models/bge-m3",
+   )
+
+   context = open("examples/harry_potter.txt").read()
+   pipe.memorize(context, save_dir="cache/harry_potter", print_stats=True)
+   print(pipe("书里密室被打开了几次？"))
+   PY
+
+   # 方式 B：如果想写成脚本，可将上面代码保存为 run_lite.py 后执行
+   # python run_lite.py
+   ```
+   首次运行会在 `cache/harry_potter/` 生成 KV 缓存、Faiss 索引和分块文件，后续可直接加载：
+   ```python
+   pipe.load("cache/harry_potter/", print_stats=True)
+   ```
+   如果把命令行片段复制到 `.py` 文件里，请确保顶格书写（不要在文件开头多缩进），否则会出现 `IndentationError: unexpected indent`。也可以直接运行随仓库附带的无缩进示例脚本：
+   ```bash
+   python examples/run_lite_local.py
+   ```
+3. **在脚本/笔记本里运行 Lite 示例（可自由修改参数）**：
+   ```python
+   from memorag import MemoRAGLite
+
+   pipe = MemoRAGLite(
+       mem_model_name_or_path="models/memorag-qwen2-7b-inst",
+       ret_model_name_or_path="models/bge-m3",
+   )
+
+   context = open("examples/harry_potter.txt").read()
+   pipe.memorize(context, save_dir="cache/harry_potter", print_stats=True)
+   print(pipe("书里密室被打开了几次？"))
+   ```
+   首次运行会在 `cache/harry_potter/` 生成 KV 缓存、Faiss 索引和分块文件，后续可直接加载：
+   ```python
+   pipe.load("cache/harry_potter/", print_stats=True)
+   ```
+4. **标准 Pipeline 示例（可自定义生成模型）**：
+   ```python
+   from memorag import MemoRAG
+
+   pipe = MemoRAG(
+       mem_model_name_or_path="models/memorag-qwen2-7b-inst",
+       ret_model_name_or_path="models/bge-m3",
+       gen_model_name_or_path="models/memorag-qwen2-7b-inst",  # 如有单独生成模型可替换其路径
+       beacon_ratio=4,
+   )
+
+   context = open("examples/harry_potter.txt").read()
+   res = pipe(context=context, query="书里密室被打开了几次？", task_type="memorag", max_new_tokens=256,
+              save_dir="cache/harry_potter/")
+   print(res)
+
+   # 下次只需加载缓存
+   pipe.load("cache/harry_potter/", print_stats=True)
+   ```
+
+按照以上顺序：**激活环境 → 本地模型路径 → 运行示例脚本**，即可在离线状态下复现项目功能。
 
 For **Quick Start**,
 We provide a notebook to illustrate all functions of MemoRAG [here](https://github.com/qhjqhj00/MemoRAG/blob/main/examples/example.ipynb).
