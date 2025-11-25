@@ -14,13 +14,15 @@ import json
 import tiktoken
 import copy
 
-# Work around minference 0.1.5 missing typing imports for `Union`/`Tuple` by
-# pre-populating them on builtins before importing the library.
-from typing import Tuple as _TypingTuple, Union as _TypingUnion
+# Work around minference 0.1.5 missing typing imports for `Union`/`Tuple`/`List`
+# by pre-populating them on builtins before importing the library.
+from typing import List as _TypingList, Tuple as _TypingTuple, Union as _TypingUnion
 if not hasattr(builtins, "Union"):
     builtins.Union = _TypingUnion
 if not hasattr(builtins, "Tuple"):
     builtins.Tuple = _TypingTuple
+if not hasattr(builtins, "List"):
+    builtins.List = _TypingList
 
 from minference import MInference
 
