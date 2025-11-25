@@ -1,17 +1,56 @@
+import builtins
+from itertools import chain
+import os
+import json
+import copy
+import tiktoken
+from typing import Any, Dict, List, Optional, Union
+
 import torch
 from transformers.utils import logging
-from typing import Dict, Union, List, Optional
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, DynamicCache
 from transformers.tokenization_utils_base import BatchEncoding
-from itertools import chain
 from semantic_text_splitter import TextSplitter
-from .retrieval import DenseRetriever, FaissIndex
-from typing import Dict, List, Union
+
 from .prompt import en_prompts, zh_prompts
-import os 
-import json
-import tiktoken
-import copy
+from .retrieval import DenseRetriever, FaissIndex
+
+# Work around minference 0.1.5 missing typing imports (e.g., Union/Tuple/List/Dict/Optional/Any/
+# BaseModelOutputWithPast/CausalLMOutputWithPast) by pre-populating them on builtins before
+# importing the library.
+try:
+    from transformers.modeling_outputs import (
+        BaseModelOutputWithPast as _HFBaseModelOutputWithPast,
+        CausalLMOutputWithPast as _HFCausalLMOutputWithPast,
+    )
+except Exception:  # pragma: no cover - fallback when transformers is unavailable or outdated
+    _HFBaseModelOutputWithPast = Any
+    _HFCausalLMOutputWithPast = Any
+
+from typing import (
+    Any as _TypingAny,
+    Dict as _TypingDict,
+    List as _TypingList,
+    Optional as _TypingOptional,
+    Tuple as _TypingTuple,
+    Union as _TypingUnion,
+)
+
+_missing_typing_shims = {
+    "Any": _TypingAny,
+    "Dict": _TypingDict,
+    "List": _TypingList,
+    "Optional": _TypingOptional,
+    "Tuple": _TypingTuple,
+    "Union": _TypingUnion,
+    "BaseModelOutputWithPast": _HFBaseModelOutputWithPast,
+    "CausalLMOutputWithPast": _HFCausalLMOutputWithPast,
+}
+
+for _name, _value in _missing_typing_shims.items():
+    if not hasattr(builtins, _name):
+        setattr(builtins, _name, _value)
+
 from minference import MInference
 
 logger = logging.get_logger(__name__)          
