@@ -1,24 +1,37 @@
 import builtins
-import torch
-from transformers.utils import logging
-from typing import Dict, Union, List, Optional
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, DynamicCache
-from transformers.tokenization_utils_base import BatchEncoding
 from itertools import chain
-from semantic_text_splitter import TextSplitter
-from .retrieval import DenseRetriever, FaissIndex
-from typing import Dict, List, Union
-from .prompt import en_prompts, zh_prompts
 import os
 import json
-import tiktoken
 import copy
+import tiktoken
+from typing import Dict, List, Optional, Union
 
-# Work around minference 0.1.5 missing a typing import for `Union` by
-# pre-populating it on builtins before importing the library.
-from typing import Union as _TypingUnion
+import torch
+from transformers.utils import logging
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, DynamicCache
+from transformers.tokenization_utils_base import BatchEncoding
+from semantic_text_splitter import TextSplitter
+
+from .prompt import en_prompts, zh_prompts
+from .retrieval import DenseRetriever, FaissIndex
+
+# Work around minference 0.1.5 missing typing imports for `Union`/`Tuple`/`List`/`BaseModelOutputWithPast`
+# by pre-populating them on builtins before importing the library.
+try:
+    from transformers.modeling_outputs import BaseModelOutputWithPast as _HFBaseModelOutputWithPast
+except Exception:  # pragma: no cover - fallback when transformers is unavailable or outdated
+    from typing import Any as _HFBaseModelOutputWithPast
+
+from typing import List as _TypingList, Tuple as _TypingTuple, Union as _TypingUnion
 if not hasattr(builtins, "Union"):
     builtins.Union = _TypingUnion
+if not hasattr(builtins, "Tuple"):
+    builtins.Tuple = _TypingTuple
+if not hasattr(builtins, "List"):
+    builtins.List = _TypingList
+if not hasattr(builtins, "BaseModelOutputWithPast"):
+    builtins.BaseModelOutputWithPast = _HFBaseModelOutputWithPast
+
 
 from minference import MInference
 
