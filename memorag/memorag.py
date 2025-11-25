@@ -32,6 +32,7 @@ if not hasattr(builtins, "List"):
 if not hasattr(builtins, "BaseModelOutputWithPast"):
     builtins.BaseModelOutputWithPast = _HFBaseModelOutputWithPast
 
+
 from minference import MInference
 
 logger = logging.get_logger(__name__)          
