@@ -1,3 +1,4 @@
+import builtins
 import torch
 from transformers.utils import logging
 from typing import Dict, Union, List, Optional
@@ -8,10 +9,19 @@ from semantic_text_splitter import TextSplitter
 from .retrieval import DenseRetriever, FaissIndex
 from typing import Dict, List, Union
 from .prompt import en_prompts, zh_prompts
-import os 
+import os
 import json
 import tiktoken
 import copy
+
+# Work around minference 0.1.5 missing typing imports for `Union`/`Tuple` by
+# pre-populating them on builtins before importing the library.
+from typing import Tuple as _TypingTuple, Union as _TypingUnion
+if not hasattr(builtins, "Union"):
+    builtins.Union = _TypingUnion
+if not hasattr(builtins, "Tuple"):
+    builtins.Tuple = _TypingTuple
+
 from minference import MInference
 
 logger = logging.get_logger(__name__)          
